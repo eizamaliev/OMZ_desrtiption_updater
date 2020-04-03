@@ -1,21 +1,3 @@
-#!/usr/bin/env python3
-
-"""
- Copyright (c) 2019 Intel Corporation
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
-"""
-
 import argparse
 import logging
 import os
@@ -42,12 +24,20 @@ LOG_LEVELS = {
 
 def parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', '--readme-dir', type=str, default='../intel_models',
+    parser.add_argument('-r', '--readme-dir', type=str, default='models',
                         help='Path to root directory with models descriptions')
-    parser.add_argument('-l', '--list', type=str, default='list_topologies.yml', help='File with topologies list')
-    parser.add_argument('-o', '--out-file', type=str, default='list_topologies.new.yml', help='Output file')
-    parser.add_argument('-c', '--config-dir', type=str, default='../models', help='Directory with topologies configs')
-    parser.add_argument('-X', type=bool, default=False, help="Use new topology's representation")
+    parser.add_argument('-c', '--config-dir', type=str,
+                        help='Path to root directory with topologies configs '
+                             '(by default used directory from "--readme-dir" key')
+
+    parser.add_argument('--deprecated_representation', type=bool, default=False,
+                        help="Used for old topology's representation")
+    parser.add_argument('-l', '--list', type=str, default='list_topologies.yml',
+                        help='DEPRECATED: file with topologies list')
+    parser.add_argument('-o', '--out-file', type=str,
+                        help='DEPRECATED: output file with topologies list '
+                             '(by default used original file from --out-file key)')
+
     parser.add_argument('--regime', type=str, choices=REGIMES, default='check',
                         help='Script work regime: "check" only finds diffs, "update" - updates values')
     parser.add_argument('--log-level', choices=LOG_LEVELS.keys(), default='warning',
@@ -207,22 +197,16 @@ def main():
     global REGIME
     REGIME = args.regime
 
-    #import test
-    #test.find_link()
-    #return
-    #test.test_description_parsing(args.out_file)
-    #return
-
     descriptions = collect_descriptions(collect_readme(args.readme_dir))
-    if args.X:
-        topologies = get_topologies_from_configs(args.config_dir)
+    if not args.deprecated_representation:
+        config_dir = args.config_dir if args.config_dir else args.readme_dir
+        topologies = get_topologies_from_configs(config_dir)
         diffs = update_topologies_configs(topologies, descriptions)
     else:
         topologies = get_topologies(args.list)
         diffs = update_topologies_list(topologies, descriptions)
         save_topologies(args.out_file, topologies)
-    #import test
-    #test.test_description_parsing(args.out_file)
+
     return diffs
 
 
